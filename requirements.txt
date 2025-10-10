@@ -1,0 +1,12 @@
+jupyter
+ipykernel
+pandas
+matplotlib
+seaborn
+openpyxl
+scikit-learn
+statsmodels
+catboost 
+graphviz 
+six
+pydotplus
