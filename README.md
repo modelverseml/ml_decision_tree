@@ -171,4 +171,112 @@ Example :
 
 Lets see the left tree information gain, 
 
-entropy of node f1
+f1 entropy : 
+
+$$
+Entropy(D) =  - \frac{9}{14}log_2 \frac{9}{14} - \frac{5}{14}log_2 \frac{5}{14} = 0.94
+$$
+
+c1 entropy : 
+
+$$
+Entropy(D) =  - \frac{6}{8}log_2 \frac{6}{8} - \frac{2}{8}log_2 \frac{2}{8} = 0.81
+$$
+
+c2 entropy : 
+
+$$
+Entropy(D) =  - \frac{3}{6}log_2 \frac{3}{6} - \frac{3}{6}log_2 \frac{3}{6} = 1
+$$
+
+Information Gain
+
+$$
+Gain = D - D_A 
+$$
+
+$$
+D_A = \frac{8}{14} \times c1_{entropy} + \frac{6}{14} \times c2_{entropy}
+$$
+
+$$
+D_A = \frac{8}{14} \times 0.81 + \frac{6}{14} \times 1
+$$
+
+$$
+D_A = 0.8924
+$$
+
+$$
+Gain =  0.94 -  0.89 = 0.05
+$$
+
+right side tree information gain, 
+
+f2 entropy : 
+
+$$
+Entropy(D) =  - \frac{8}{12}log_2 \frac{8}{12} - \frac{4}{12}log_2 \frac{4}{12} = 0.92
+$$
+
+
+c3 entropy : 
+
+$$
+Entropy(D) =  - \frac{3}{3}log_2 \frac{3}{3} = 0
+$$
+
+c4 entropy : 
+
+$$
+Entropy(D) =  - \frac{5}{9}log_2 \frac{5}{9} - \frac{4}{9}log_2 \frac{4}{9} = 0.99
+$$
+
+
+Information Gain
+
+$$
+Gain = D - D_A 
+$$
+
+$$
+D_A = \frac{3}{12} \times c3_{entropy} + \frac{9}{12} \times c4_{entropy}
+$$
+
+$$
+D_A = \frac{3}{12} \times 0 + \frac{9}{12} \times 0.99
+$$
+
+$$
+D_A = 0.74
+$$
+
+$$
+Gain =  0.92 -  0.74 = 0.16
+$$
+
+
+Based on the calculated information gain, it is more effective to split the tree at the f2 node, as it provides a higher gain compared to f1.
+
+Although we used different cases for illustration, in the actual dataset both f1 and f2 nodes have the same number of input records.
+
+## Disadvantages of Decision Trees
+
+- Decision trees tend to overfit the training data, as they attempt to perfectly classify all examples, which can reduce generalization to unseen data.
+- Small changes or variations in the input data can lead to significant changes in the tree structure, making the model unstable
+
+**Overfitting can be tackle using two stratagies**
+- **Truncation** : Stop the tree growth early, before it becomes too complex. This is also known as pre-pruning, where certain stopping criteria (like minimum information gain or maximum depth) are applied during the tree-building process.
+
+- **Pruning** : Allow the tree to grow fully, then remove branches that contribute little to predictive power. This is done in a bottom-up manner, starting from the leaves, and is known as post-pruning.
+
+Apart from these techniques, there are several parameters in the DecisionTreeClassifier model that can be adjusted to fine-tune its performance. This process is known as hyperparameter tuning.
+
+### Key Hyperparameters in DecisionTreeClassifier
+
+- **criterion (Gini / Entropy)** : Measures split quality. Default is "gini"; use "entropy" for information gain.
+- **max_features** : Number of features to consider at each split. Can be an integer, float (percentage), "sqrt", "log2", or None (default = all features).
+- **max_depth** : Maximum depth of the tree. Integer value or None (default = grow until leaves are pure or min_samples_split is reached).
+- **min_samples_split** : Minimum samples needed to split a node. Integer or float (fraction). Default = 2.
+- **min_samples_leaf** : Minimum samples required at a leaf. Integer or float (fraction). Default = 1.
+
