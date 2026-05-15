@@ -19,6 +19,116 @@ Traditional models like regression and classification require several assumption
 
 However, decision trees do not rely on these assumptions. They can naturally handle non-linear relationships, unclean or unscaled data, and correlated features without much preprocessing. This makes them easier to use, more flexible, and often more interpretable compared to traditional regression or classification models.
 
+## Repository Structure
+
+```
+ml_decision_tree/
+├── README.md
+├── requirements.txt
+├── ml_decision_tree.ipynb                 # End-to-end walkthrough (classification + regression) on synthetic data
+├── manual_decision_tree.py                # From-scratch DT (gini / entropy / classification error / mse)
+├── decision_tree_model_building.py        # DecisionTreeClassifier / DecisionTreeRegressor wrapper
+├── tree_visualization.py                  # plot_tree + feature-importance ranking
+├── classification_metrics.py              # Confusion matrix, ROC, PR, cutoff sweep
+├── regression_metrics.py                  # MAE, MSE, RMSE, R², Adjusted R²
+└── Images/
+```
+
+## Getting Started
+
+```bash
+git clone https://github.com/modelverseml/ml_decision_tree.git
+cd ml_decision_tree
+pip install -r requirements.txt
+jupyter notebook ml_decision_tree.ipynb
+```
+
+## Dataset
+
+The notebook generates **synthetic** data for both task types so there are no external files to download:
+
+- **Classification** — `sklearn.datasets.make_classification(n_samples=1500, n_features=10, n_informative=6, n_redundant=2, weights=[0.7, 0.3])`. Mildly imbalanced so precision / recall / ROC-AUC are meaningful, not just accuracy.
+- **Regression** — `sklearn.datasets.make_regression(n_samples=1500, n_features=8, n_informative=5, noise=15)`.
+
+To swap in your own data, replace the `make_classification` or `make_regression` call in the notebook with `pd.read_csv(...)` or similar — the rest of the pipeline (train/test split, both model builders, GridSearchCV, metrics, visualisation) is dataset-agnostic.
+
+## Code Modules
+
+### From-scratch decision tree
+
+[`manual_decision_tree.py`](manual_decision_tree.py) implements the algorithm described in this README from scratch — no `sklearn.tree` import. Greedy top-down recursive splitting, with the impurity options (gini / entropy / classification error / mse) and pre-pruning hyperparameters (`max_depth`, `min_samples_split`, `min_samples_leaf`) all configurable.
+
+```python
+from manual_decision_tree import ManualDecisionTree
+
+# Classification — pick any of: 'gini', 'entropy', 'error'
+clf = ManualDecisionTree(task='classification', criterion='gini', max_depth=5).fit(X_train, y_train)
+y_pred = clf.predict(X_test)
+print(f"depth={clf.depth}, leaves={clf.n_leaves}")
+
+# Regression — pick: 'mse'
+reg = ManualDecisionTree(task='regression', criterion='mse', max_depth=5).fit(X_train, y_train)
+y_pred = reg.predict(X_test)
+```
+
+The implementation chooses every candidate threshold as the midpoint between adjacent sorted feature values, computes weighted child impurity, and keeps the split with the largest information gain — exactly the procedure described in the [Variable selection for split](#variable-attribute-selection-for-split) section below.
+
+### Fitting a model
+
+```python
+from decision_tree_model_building import DecisionTreeModels
+
+# Classification — defaults to criterion='gini'
+trees = DecisionTreeModels(criterion='gini', max_depth=5, min_samples_split=2, min_samples_leaf=1)
+clf = trees.get_classifier_model(X_train, y_train)
+y_pred  = clf.predict(X_test)
+y_proba = clf.predict_proba(X_test)[:, 1]
+
+# Regression — defaults to criterion='squared_error'
+trees = DecisionTreeModels(criterion='squared_error', max_depth=8)
+reg = trees.get_regressor_model(X_train, y_train)
+y_pred = reg.predict(X_test)
+
+# Override any hyperparameters at fit-time (e.g. from grid search)
+clf = trees.get_classifier_model(
+    X_train, y_train,
+    parameters_dict={'criterion': 'entropy', 'max_depth': 7, 'min_samples_leaf': 5},
+)
+```
+
+### Visualizing the tree
+
+```python
+from tree_visualization import TreeVisualizer
+
+viz = TreeVisualizer(clf, feature_names=X_train.columns, class_names=['No', 'Yes'])
+viz.plot(max_depth=3)               # Render the top 3 levels
+viz.feature_importance(top_n=10)    # DataFrame of features sorted by importance
+```
+
+### Evaluating a classifier
+
+```python
+from classification_metrics import ClassificationMetrics
+
+metrics = ClassificationMetrics(y_test, y_pred, y_proba)
+metrics.get_metrics()                # Accuracy, Precision, Recall, Specificity, F1, ROC-AUC
+metrics.plot_confusion_matrix()
+metrics.plot_roc_curve()
+metrics.plot_precision_recall_curve()
+cutoff_df = metrics.cutoff_table()   # Sensitivity / specificity / accuracy at every threshold
+```
+
+### Evaluating a regressor
+
+```python
+from regression_metrics import RegressionMetrics
+
+metrics = RegressionMetrics(y_test, y_pred, n_features=X_test.shape[1])
+metrics.get_metrics()        # MAE, MSE, RMSE, R², Adjusted R²
+metrics.plot_residuals()     # Residuals-vs-fitted + residual histogram
+```
+
 ## Characteristics of Decision Trees
 
 - **Highly interpretable** : The prediction process is easy to understand and visualize, as it follows a clear rule-based structure.
@@ -259,6 +369,8 @@ $$
 Based on the calculated information gain, it is more effective to split the tree at the f2 node, as it provides a higher gain compared to f1.
 
 Although we used different cases for illustration, in the actual dataset both f1 and f2 nodes have the same number of input records.
+
+- [View Decision Tree manual code implementation](manual_decision_tree.py)
 
 ## Disadvantages of Decision Trees
 
