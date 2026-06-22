@@ -22,44 +22,53 @@ However, decision trees do not rely on these assumptions. They can naturally han
 ## Repository Structure
 
 ```
-ml_decision_tree/
+Decision-Tree/
 ├── README.md
 ├── requirements.txt
-├── ml_decision_tree.ipynb                 # End-to-end walkthrough (classification + regression) on synthetic data
-├── manual_decision_tree.py                # From-scratch DT (gini / entropy / classification error / mse)
-├── decision_tree_model_building.py        # DecisionTreeClassifier / DecisionTreeRegressor wrapper
-├── tree_visualization.py                  # plot_tree + feature-importance ranking
-├── classification_metrics.py              # Confusion matrix, ROC, PR, cutoff sweep
-├── regression_metrics.py                  # MAE, MSE, RMSE, R², Adjusted R²
+├── main.py                                    # runs the full walkthrough
+├── decision_tree/                             # the package (importable)
+│   ├── __init__.py
+│   ├── manual_decision_tree.py                # from-scratch DT (gini / entropy / error / mse)
+│   ├── decision_tree_model_building.py        # DecisionTreeClassifier / Regressor wrapper
+│   ├── tree_visualization.py                  # plot_tree + feature-importance ranking
+│   ├── classification_metrics.py              # confusion matrix, ROC, PR, cutoff sweep
+│   └── regression_metrics.py                  # MAE, MSE, RMSE, R², Adjusted R²
+├── examples/
+│   └── walkthrough.py                         # end-to-end demo (classification + regression)
 └── Images/
 ```
 
 ## Getting Started
 
 ```bash
-git clone https://github.com/modelverseml/ml_decision_tree.git
-cd ml_decision_tree
+git clone https://github.com/modelverseml/Decision-Tree.git
+cd Decision-Tree
 pip install -r requirements.txt
-jupyter notebook ml_decision_tree.ipynb
+
+# Run the full walkthrough (classification + regression, vs scikit-learn)
+python main.py
+
+# Add the tree / metric plots
+python main.py --plot
 ```
 
 ## Dataset
 
-The notebook generates **synthetic** data for both task types so there are no external files to download:
+The walkthrough generates **synthetic** data for both task types so there are no external files to download:
 
 - **Classification** — `sklearn.datasets.make_classification(n_samples=1500, n_features=10, n_informative=6, n_redundant=2, weights=[0.7, 0.3])`. Mildly imbalanced so precision / recall / ROC-AUC are meaningful, not just accuracy.
 - **Regression** — `sklearn.datasets.make_regression(n_samples=1500, n_features=8, n_informative=5, noise=15)`.
 
-To swap in your own data, replace the `make_classification` or `make_regression` call in the notebook with `pd.read_csv(...)` or similar — the rest of the pipeline (train/test split, both model builders, GridSearchCV, metrics, visualisation) is dataset-agnostic.
+To swap in your own data, replace the `make_classification` or `make_regression` call in [`examples/walkthrough.py`](examples/walkthrough.py) with `pd.read_csv(...)` or similar. The rest of the pipeline (train/test split, both model builders, GridSearchCV, metrics, visualisation) is dataset-agnostic.
 
 ## Code Modules
 
 ### From-scratch decision tree
 
-[`manual_decision_tree.py`](manual_decision_tree.py) implements the algorithm described in this README from scratch — no `sklearn.tree` import. Greedy top-down recursive splitting, with the impurity options (gini / entropy / classification error / mse) and pre-pruning hyperparameters (`max_depth`, `min_samples_split`, `min_samples_leaf`) all configurable.
+[`manual_decision_tree.py`](decision_tree/manual_decision_tree.py) implements the algorithm described in this README from scratch — no `sklearn.tree` import. Greedy top-down recursive splitting, with the impurity options (gini / entropy / classification error / mse) and pre-pruning hyperparameters (`max_depth`, `min_samples_split`, `min_samples_leaf`) all configurable. Everything imports from the `decision_tree` package.
 
 ```python
-from manual_decision_tree import ManualDecisionTree
+from decision_tree import ManualDecisionTree
 
 # Classification — pick any of: 'gini', 'entropy', 'error'
 clf = ManualDecisionTree(task='classification', criterion='gini', max_depth=5).fit(X_train, y_train)
@@ -76,7 +85,7 @@ The implementation chooses every candidate threshold as the midpoint between adj
 ### Fitting a model
 
 ```python
-from decision_tree_model_building import DecisionTreeModels
+from decision_tree import DecisionTreeModels
 
 # Classification — defaults to criterion='gini'
 trees = DecisionTreeModels(criterion='gini', max_depth=5, min_samples_split=2, min_samples_leaf=1)
@@ -99,7 +108,7 @@ clf = trees.get_classifier_model(
 ### Visualizing the tree
 
 ```python
-from tree_visualization import TreeVisualizer
+from decision_tree import TreeVisualizer
 
 viz = TreeVisualizer(clf, feature_names=X_train.columns, class_names=['No', 'Yes'])
 viz.plot(max_depth=3)               # Render the top 3 levels
@@ -109,7 +118,7 @@ viz.feature_importance(top_n=10)    # DataFrame of features sorted by importance
 ### Evaluating a classifier
 
 ```python
-from classification_metrics import ClassificationMetrics
+from decision_tree import ClassificationMetrics
 
 metrics = ClassificationMetrics(y_test, y_pred, y_proba)
 metrics.get_metrics()                # Accuracy, Precision, Recall, Specificity, F1, ROC-AUC
@@ -122,7 +131,7 @@ cutoff_df = metrics.cutoff_table()   # Sensitivity / specificity / accuracy at e
 ### Evaluating a regressor
 
 ```python
-from regression_metrics import RegressionMetrics
+from decision_tree import RegressionMetrics
 
 metrics = RegressionMetrics(y_test, y_pred, n_features=X_test.shape[1])
 metrics.get_metrics()        # MAE, MSE, RMSE, R², Adjusted R²
@@ -370,7 +379,7 @@ Based on the calculated information gain, it is more effective to split the tree
 
 Although we used different cases for illustration, in the actual dataset both f1 and f2 nodes have the same number of input records.
 
-- [View Decision Tree manual code implementation](manual_decision_tree.py)
+- [View Decision Tree manual code implementation](decision_tree/manual_decision_tree.py)
 
 ## Disadvantages of Decision Trees
 
